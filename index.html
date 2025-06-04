@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="stylesheet" href="/aco-phaser/src/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vite App</title>
+  <style>
+    body {
+      background-color: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .options button {
+      margin: 10px;
+      padding: 15px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #333;
+      color: white;
+      border: 2px solid #fff;
+      border-radius: 5px;
+    }
+
+    .options button:hover {
+      background-color: #555;
+    }
+    
+  </style>
+</head>
+
+<body>
+
+  <div class="options">
+    <button id="screen1">Pantalla 1 con ACO</button>
+    <button id="screen2">Pantalla 2 sin algoritmo</button>
+  </div>
+  <div id="app"></div>
+
+  <script type="module">
+    document.getElementById("screen1").addEventListener("click", function () {
+      // Mostrar Pantalla 1 con ACO
+      document.querySelector('.options').style.display = 'none'; // Ocultar opciones
+      document.getElementById('app').style.display = 'block'; // Mostrar div #app
+      // Aquí puedes inicializar el código de ACO, por ejemplo:
+      import("/src/main.js"); // Asegúrate de que esto sea correcto para tu proyecto
+    });
+
+    document.getElementById("screen2").addEventListener("click", function () {
+      // Mostrar Pantalla 2 sin algoritmo
+      document.querySelector('.options').style.display = 'none'; // Ocultar opciones
+      document.getElementById('app').style.display = 'block'; // Mostrar div #app
+      // Aquí puedes poner un código alternativo para la pantalla sin ACO
+      import("/src/main.js"); // Asegúrate de que esto sea correcto para tu proyecto
+    });
+  </script>
+
+</body>
+
+</html>
