@@ -25,17 +25,31 @@ export class Ant {
             x + Phaser.Math.Between(-JITTER, JITTER),
             y + Phaser.Math.Between(-JITTER, JITTER),
             5,
-            color
+            color   
         );
-
+/*
         this.collisionRadius = 8; // Radio para detección de colisiones
         this.isAvoiding = false;
         this.avoidanceTimer = 0;
         this.avoidanceDirection = { x: 0, y: 0 };
         this.maxAvoidanceTime = 1000; // 1 segundo de evitación
-    }
+*/
+        this.maxRetries = 3; // Intentos máximos antes de reiniciar ruta
+        this.retryCount = 0;
+        this.visitedEdges = new Set(); // Registrar aristas visitadas
+        this.directionVector = { x: 0, y: 0 }; // Vector de dirección general
+        this.updateDirectionVector(); // Calcular dirección inicial
 
+    }
     tryMove(ctx) {
+        // Verificar si está dando vueltas
+        if (this.path.length > ctx.nodes.length * 0.7) {
+        console.log(`Hormiga ${this.path[0]} en posible ciclo, reiniciando`);
+        this.path = [this.path[0]]; // Reiniciar camino
+        this.current = this.path[0];
+        this.visitedEdges.clear();
+    return;
+  }
         if (this.arrived || this.isMoving || this.isStuck || this.isAvoiding) {
             if (this.isStuck) {
                 this.stuckTimer -= ctx.time.delta;
@@ -48,13 +62,13 @@ export class Ant {
             }
             return;
         }
-
+/*
         // Verificar colisiones antes de moverse
         if (this.checkCollisions(ctx)) {
             return;
         }
         
-
+*/
         const previousNode = this.path.length > 1 ? this.path[this.path.length - 2] : null;
 
         // 1. Obtener vecinos directos
@@ -102,7 +116,7 @@ export class Ant {
         );
         this.moveTo(next, dist, ctx);
     }
-    
+    /*
     checkCollisions(ctx) {
         const collidingAnts = ctx.ants.filter(ant => {
             if (ant === this || ant.arrived || !ant.isMoving) return false;
@@ -138,7 +152,8 @@ export class Ant {
         
         return false;
     }
-
+*/
+/*
     performAvoidance(ctx) {
         // Mover en la dirección de evitación
         const avoidanceSpeed = this.speed * 0.5; // Moverse más lento al evitar
@@ -169,7 +184,7 @@ export class Ant {
             }
         }
     }
-
+*/
     moveTo(nextNodeIndex, distance, ctx) {
         this.isMoving = true;
         this.current = nextNodeIndex;
@@ -203,4 +218,33 @@ export class Ant {
             onComplete: () => this.isMoving = false
         });
     }
+    updateDirectionVector() {
+        const targetNode = this.nodes[this.target];
+        const currentNode = this.nodes[this.current];
+        this.directionVector = {
+            x: targetNode.x - currentNode.x,
+            y: targetNode.y - currentNode.y
+        };
+        // Normalizar el vector
+        const length = Math.sqrt(this.directionVector.x**2 + this.directionVector.y**2);
+        if (length > 0) {
+            this.directionVector.x /= length;
+            this.directionVector.y /= length;
+        }
+    }
+    update() {
+  // Mostrar dirección y destino
+  if (this.sprite && !this.arrived) {
+    const targetNode = this.nodes[this.target];
+    this.scene.graphics.lineStyle(1, this.color, 0.3);
+    this.scene.graphics.lineBetween(
+      this.sprite.x, this.sprite.y,
+      targetNode.x, targetNode.y
+    );
+    
+    // Mostrar punto de destino
+    this.scene.graphics.fillStyle(this.color, 0.5);
+    this.scene.graphics.fillCircle(targetNode.x, targetNode.y, 8);
+  }
+}
 }
