@@ -5,7 +5,7 @@ import {
   SPAWN_INTERVAL, CYCLE_INTERVAL, TRAFFIC_INTERVAL,
   ACO_PARAMS, TRAFFIC_PARAMS, MIN_ANTS_PER_MINUTE, MAX_ANTS_PER_MINUTE, SPAWN_RANDOMNESS
 } from '../config/constants';
-import { COLONIES, ENTRANCES,  EXITS, getRandomNode} from '../config/colonies';
+import { COLONIES, ENTRANCES, EXITS, getRandomNode } from '../config/colonies';
 import { NODES } from '../config/nodes';
 import { BASE_EDGES } from '../config/edges';
 import { SPECIAL_EDGES } from '../config/traffic';
@@ -15,6 +15,14 @@ import { ONE_WAY_STREETS } from '../config/traffic';
 export class ACOScene extends Phaser.Scene {
   constructor() {
     super('ACOScene');
+    this.numCarsText = null;  // Número de autos (hormigas)
+    this.mostUsedRoutesText = null;  // Rutas más usadas
+    this.avgTimeText = null;  // Tiempo promedio
+
+    this.numCars = 0;
+    this.mostUsedRoutes = {};  // Para contar las rutas más usadas
+    this.totalTravelTime = 0;
+    this.totalArrived = 0;
     // Agregar a tu clase ACOScene (en la parte de inicialización)
     this.edgeStates = {
       '22-33': true,  // true = semáforo verde, false = semáforo rojo
@@ -23,7 +31,7 @@ export class ACOScene extends Phaser.Scene {
       '9-22': true,
       '31-34': true
     };
-    
+
     // Parámetros ACO
     this.edgeUsage = {}
     this.alpha = ACO_PARAMS.alpha;
@@ -45,35 +53,52 @@ export class ACOScene extends Phaser.Scene {
     this.edgeStates = {};
     this.specialEdges.forEach(key => this.edgeStates[key] = true);
     this.specialEdgeTimers = {};
-/*
-    this.collisionCount = 0;
-    this.collisionText = null;
-  */
+    /*
+        this.collisionCount = 0;
+        this.collisionText = null;
+      */
     this.colonyStats = {};
     this.antsPerSecondRange = [
       MIN_ANTS_PER_MINUTE / 60,  // ~1.16 hormigas/seg
       MAX_ANTS_PER_MINUTE / 60   // ~1.66 hormigas/seg
     ];
     this.nextSpawnInterval = this.calculateNextSpawnInterval();
-    this.HORMIGAS_POR_MINUTO = 70;
+    this.HORMIGAS_POR_MINUTO = 150;
     this.hormigasGeneradasEsteMinuto = 0;
     this.ultimoMinuto = 0;
 
   }
   calculateNextSpawnInterval() {
-  const antsPerSecond = Phaser.Math.FloatBetween(...this.antsPerSecondRange);
-  const baseInterval = 1000 / antsPerSecond; // Convertir a ms entre hormigas
-  
-  // Aplicar variabilidad aleatoria
-  return Phaser.Math.Between(
-    baseInterval * (1 - SPAWN_RANDOMNESS),
-    baseInterval * (1 + SPAWN_RANDOMNESS)
-  );
-}
+    const antsPerSecond = Phaser.Math.FloatBetween(...this.antsPerSecondRange);
+    const baseInterval = 1000 / antsPerSecond; // Convertir a ms entre hormigas
+
+    // Aplicar variabilidad aleatoria
+    return Phaser.Math.Between(
+      baseInterval * (1 - SPAWN_RANDOMNESS),
+      baseInterval * (1 + SPAWN_RANDOMNESS)
+    );
+  }
   preload() { }
 
   create() {
-    this.graphics = this.add.graphics();
+    this.numCarsText = this.add.text(
+      600, // X: 600 píxeles desde la izquierda
+      50,  // Y: 50 píxeles desde la parte superior
+      'Número de autos: 0',
+      { font: '14px Arial', fill: '#ffffff' }
+    );
+    this.mostUsedRoutesText = this.add.text(
+      600, // X: 600 píxeles desde la izquierda
+      70,  // Y: 70 píxeles desde la parte superior
+      'Rutas más usadas: ',
+      { font: '14px Arial', fill: '#ffffff' }
+    );
+    this.timeElapsedText = this.add.text(
+      600, // X: 600 píxeles desde la izquierda
+      150, // Y: 150 píxeles desde la parte superior
+      'Tiempo transcurrido: 0s',
+      { font: '14px Arial', fill: '#ffffff' }
+    );
 
     this.setupNodes();
     this.setupEdges();
@@ -87,25 +112,25 @@ export class ACOScene extends Phaser.Scene {
 
     this.trafficLights = {};
     // Dibujar entradas y salidas
-  ENTRANCES.forEach(ent => {
-    this.add.circle(this.nodes[ent.node].x, this.nodes[ent.node].y, 12, ent.color)
-      .setAlpha(0.7);
-    this.add.text(this.nodes[ent.node].x - 30, this.nodes[ent.node].y - 25, 
-                 ent.name, { font: '10px Arial', fill: '#ffffff' });
-  });
-  
-  EXITS.forEach(ex => {
-    this.add.rectangle(this.nodes[ex.node].x, this.nodes[ex.node].y, 15, 15, ex.color)
-      .setAlpha(0.7);
-    this.add.text(this.nodes[ex.node].x - 30, this.nodes[ex.node].y + 20, 
-                 ex.name, { font: '10px Arial', fill: '#ffffff' });
-  });
+    ENTRANCES.forEach(ent => {
+      this.add.circle(this.nodes[ent.node].x, this.nodes[ent.node].y, 12, ent.color)
+        .setAlpha(0.7);
+      this.add.text(this.nodes[ent.node].x - 30, this.nodes[ent.node].y - 25,
+        ent.name, { font: '10px Arial', fill: '#ffffff' });
+    });
+
+    EXITS.forEach(ex => {
+      this.add.rectangle(this.nodes[ex.node].x, this.nodes[ex.node].y, 15, 15, ex.color)
+        .setAlpha(0.7);
+      this.add.text(this.nodes[ex.node].x - 30, this.nodes[ex.node].y + 20,
+        ex.name, { font: '10px Arial', fill: '#ffffff' });
+    });
 
     // Definir semáforo para la calle [22, 33]
     this.trafficLights['22-33'] = this.add.circle(
       this.nodes[22].x, this.nodes[33].y, 10, 0x00ff00 // Color verde inicialmente
     ).setOrigin(0.5);
-  
+
     // Definir semáforo para la calle [33, 34]
     this.trafficLights['33-34'] = this.add.circle(
       this.nodes[33].x, this.nodes[34].y, 10, 0x00ff00 // Color verde inicialmente
@@ -114,7 +139,7 @@ export class ACOScene extends Phaser.Scene {
     this.trafficLights['34-35'] = this.add.circle(
       this.nodes[34].x, this.nodes[35].y, 10, 0x00ff00 // Color verde inicialmente
     ).setOrigin(0.5);
-  
+
     // Definir semáforo para la calle [33, 34]
     this.trafficLights['9-22'] = this.add.circle(
       this.nodes[9].x, this.nodes[22].y, 10, 0x00ff00 // Color verde inicialmente
@@ -123,11 +148,11 @@ export class ACOScene extends Phaser.Scene {
     this.trafficLights['31-34'] = this.add.circle(
       this.nodes[31].x, this.nodes[34].y, 10, 0x00ff00 // Color verde inicialmente
     ).setOrigin(0.5);
-    
+
 
     // Crear otros gráficos de la simulación
     this.graphics = this.add.graphics();
-  
+
     // **Aquí agregamos el temporizador que alterna el estado de los semáforos cada 10 segundos**
     this.time.addEvent({
       delay: 5000,  // Intervalo de 10 segundos (10000 ms)
@@ -138,77 +163,82 @@ export class ACOScene extends Phaser.Scene {
 
     // Crear otros gráficos de la simulación
     this.graphics = this.add.graphics();
-    /*
-    // Añadir texto para mostrar colisiones
-    this.collisionText = this.add.text(20, 60, 'Colisiones: 0', {
-      font: '14px Arial',
-      fill: '#ff0000'
-    });
-    */
+    this.setupNodes();
+    this.setupEdges();
+    this.initPheromones();
+    this.setupColonies();
+    this.createUI();
+    this.startTimers();
   }
   update() {
-    /*
-    // Verificar colisiones globales
-    this.checkGlobalCollisions();
-    */
-   const segundosActuales = Math.floor(this.time.now / 1000);
-  
-  // Compensación si nos atrasamos
-  if (segundosActuales % 5 === 0) { // Cada 5 segundos
-    const hormigasEsperadas = Math.floor(this.HORMIGAS_POR_MINUTO * (segundosActuales / 60));
-    const diferencia = hormigasEsperadas - this.hormigasGeneradasEsteMinuto;
-    
-    if (diferencia > 1) {
-      console.log(`[Compensación] Generando ${diferencia} hormigas adicionales`);
-      for (let i = 0; i < diferencia; i++) {
-        this.spawnNextAnt();
-        this.hormigasGeneradasEsteMinuto++;
-      }
-    }
+    this.numCars = this.ants.length;
+
+    this.numCarsText.setText(`Número de autos: ${this.numCars}`);
+
+    this.updateMostUsedRoutes();
+
+    this.updateElapsedTime();
+
   }
-  }
-  /*
-  checkGlobalCollisions() {
-    const collisions = new Set();
-
-    for (let i = 0; i < this.ants.length; i++) {
-      for (let j = i + 1; j < this.ants.length; j++) {
-        const ant1 = this.ants[i];
-        const ant2 = this.ants[j];
-
-        if (ant1.arrived || ant2.arrived) continue;
-
-        const distance = Phaser.Math.Distance.Between(
-          ant1.sprite.x, ant1.sprite.y,
-          ant2.sprite.x, ant2.sprite.y
-        );
-
-        if (distance < ant1.collisionRadius + ant2.collisionRadius) {
-          collisions.add(ant1);
-          collisions.add(ant2);
-
-          // Visualización de colisión
-          this.graphics.lineStyle(2, 0xff0000, 0.5);
-          this.graphics.lineBetween(
-            ant1.sprite.x, ant1.sprite.y,
-            ant2.sprite.x, ant2.sprite.y
-          );
+  updateMostUsedRoutes() {
+    // Contar las rutas recorridas
+    this.ants.forEach(ant => {
+      if (ant.arrived) {
+        for (let i = 0; i < ant.path.length - 1; i++) {
+          const route = `${ant.path[i]}-${ant.path[i + 1]}`;
+          this.mostUsedRoutes[route] = (this.mostUsedRoutes[route] || 0) + 1;
         }
       }
-    }
+    });
 
-    if (collisions.size > 0) {
-      this.collisionCount += collisions.size;
-      this.collisionText.setText(`Colisiones: ${this.collisionCount}`);
+    const sortedRoutes = Object.entries(this.mostUsedRoutes)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);  // Obtener las 3 rutas más usadas
 
-      // Mostrar estadísticas periódicamente
-      if (this.time.now % 5000 < 16) {
-        console.log(`Colisiones detectadas: ${collisions.size}`);
-        console.log(`Total de colisiones: ${this.collisionCount}`);
-      }
+    // Crear un string con las rutas más usadas y dividir por 100
+    let routesText = 'Rutas más usadas:\n';
+    sortedRoutes.forEach(([route, count]) => {
+      // Mostrar el valor sin decimales
+      routesText += `${route}: ${Math.floor(count / 220)} veces\n`;
+    });
+
+    // Actualizar el texto de las rutas más usadas
+    this.mostUsedRoutesText.setText(routesText);
+  }
+  updateElapsedTime() {
+    // Mostrar el tiempo transcurrido en segundos
+    const elapsedTime = Math.floor(this.time.now / 1000); // Convertir a segundos
+    this.timeElapsedText.setText(`Tiempo transcurrido: ${elapsedTime}s`);
+  }
+  handleAntArrival(ant) {
+    if (!ant.counted) {
+      ant.counted = true;
+      this.totalArrived++;  // Incrementar el número de autos que llegaron
     }
   }
-    */
+  spawnAnt(colony) {
+    let startNode, targetNode;
+  
+    // Manejar entradas/salidas aleatorias
+    if (colony.start === "randomEntry") {
+      startNode = getRandomNode("entry");
+    } else {
+      startNode = colony.start;
+    }
+    
+    if (colony.target === "randomExit") {
+      targetNode = getRandomNode("exit");
+    } else {
+      targetNode = colony.target;
+    }
+
+    const ant = new Ant(startNode, targetNode, this.nodes, this, colony.color);
+    this.ants.push(ant);
+
+    // Llamar a la función para actualizar las métricas cuando la hormiga llegue
+    ant.on('arrived', () => this.handleAntArrival(ant));
+  }
+
   toggleTrafficLights() {
     // Cambiar el estado del semáforo
     this.edgeStates['22-33'] = !this.edgeStates['22-33'];
@@ -216,14 +246,14 @@ export class ACOScene extends Phaser.Scene {
     this.edgeStates['34-35'] = !this.edgeStates['34-35'];
     this.edgeStates['9-22'] = !this.edgeStates['9-22'];
     this.edgeStates['31-34'] = !this.edgeStates['31-34'];
-  
+
     // Cambiar el color de los semáforos visualmente
     this.trafficLights['22-33'].setFillStyle(this.edgeStates['22-33'] ? 0x00ff00 : 0xff0000);
     this.trafficLights['33-34'].setFillStyle(this.edgeStates['33-34'] ? 0x00ff00 : 0xff0000);
     this.trafficLights['34-35'].setFillStyle(this.edgeStates['34-35'] ? 0x00ff00 : 0xff0000);
     this.trafficLights['9-22'].setFillStyle(this.edgeStates['9-22'] ? 0x00ff00 : 0xff0000);
     this.trafficLights['31-34'].setFillStyle(this.edgeStates['31-34'] ? 0x00ff00 : 0xff0000);
-  
+
     console.log('Estado de semáforo:', this.edgeStates);
   }
   setupNodes() {
@@ -277,58 +307,58 @@ export class ACOScene extends Phaser.Scene {
 
   startTimers() {
     // Generador continuo de hormigas
-  this.time.addEvent({
-    delay: 1000 / (this.HORMIGAS_POR_MINUTO / 60), // ≈862ms entre hormigas
-    callback: () => {
-      if (this.hormigasGeneradasEsteMinuto < this.HORMIGAS_POR_MINUTO) {
-        this.spawnNextAnt();
-        this.hormigasGeneradasEsteMinuto++;
-      }
-    },
-    callbackScope: this,
-    loop: true
-  });
-
-  // Reiniciar contador cada minuto
-  this.time.addEvent({
-    delay: 60000, // 1 minuto
-    callback: () => {
-      this.hormigasGeneradasEsteMinuto = 0;
-      console.log(`[Generación] Reiniciando contador (minuto ${++this.ultimoMinuto})`);
-    },
-    callbackScope: this,
-    loop: true
-  });
-    this.colonies.forEach(col => {
-    col.lastSpawnTime = 0; // Añade esta propiedad para rastrear el último tiempo de generación
-    col.spawnEvent = this.time.addEvent({
-      delay: 3000, // Intervalo de 3 segundos (3000 ms)
-      callback: () => this.spawnAnt(col),
+    this.time.addEvent({
+      delay: 1000 / (this.HORMIGAS_POR_MINUTO / 60), // ≈862ms entre hormigas
+      callback: () => {
+        if (this.hormigasGeneradasEsteMinuto < this.HORMIGAS_POR_MINUTO) {
+          this.spawnNextAnt();
+          this.hormigasGeneradasEsteMinuto++;
+        }
+      },
       callbackScope: this,
-      repeat: this.numAntsPerColony - 1,
-      startAt: 0 // Comenzar inmediatamente la primera hormiga
+      loop: true
     });
-  });
 
-  this.time.addEvent({
-    delay: CYCLE_INTERVAL,
-    loop: true,
-    callback: () => this.runCycle()
-  });
+    // Reiniciar contador cada minuto
+    this.time.addEvent({
+      delay: 60000, // 1 minuto
+      callback: () => {
+        this.hormigasGeneradasEsteMinuto = 0;
+        console.log(`[Generación] Reiniciando contador (minuto ${++this.ultimoMinuto})`);
+      },
+      callbackScope: this,
+      loop: true
+    });
+    this.colonies.forEach(col => {
+      col.lastSpawnTime = 0; // Añade esta propiedad para rastrear el último tiempo de generación
+      col.spawnEvent = this.time.addEvent({
+        delay: 3000, // Intervalo de 3 segundos (3000 ms)
+        callback: () => this.spawnAnt(col),
+        callbackScope: this,
+        repeat: this.numAntsPerColony - 1,
+        startAt: 0 // Comenzar inmediatamente la primera hormiga
+      });
+    });
+
+    this.time.addEvent({
+      delay: CYCLE_INTERVAL,
+      loop: true,
+      callback: () => this.runCycle()
+    });
   }
 
   spawnRandomColonyAnt() {
-  if (this.ants.length > 150) return; // Límite máximo para evitar sobrecarga
-  
-  // Seleccionar colonia con menos hormigas activas
-  const colony = this.colonies.reduce((prev, curr) => {
-    const prevCount = this.ants.filter(a => a.path[0] === prev.start).length;
-    const currCount = this.ants.filter(a => a.path[0] === curr.start).length;
-    return currCount < prevCount ? curr : prev;
-  });
-  
-  this.spawnAnt(colony);
-}
+    if (this.ants.length > 150) return; // Límite máximo para evitar sobrecarga
+
+    // Seleccionar colonia con menos hormigas activas
+    const colony = this.colonies.reduce((prev, curr) => {
+      const prevCount = this.ants.filter(a => a.path[0] === prev.start).length;
+      const currCount = this.ants.filter(a => a.path[0] === curr.start).length;
+      return currCount < prevCount ? curr : prev;
+    });
+
+    this.spawnAnt(colony);
+  }
   resetSimulation() {
     this.ants.forEach(a => a.sprite.destroy());
     this.ants = [];
@@ -343,14 +373,14 @@ export class ACOScene extends Phaser.Scene {
 
   spawnAnt(colony) {
     let startNode, targetNode;
-  
+
     // Manejar entradas/salidas aleatorias
     if (colony.start === "randomEntry") {
       startNode = getRandomNode("entry");
     } else {
       startNode = colony.start;
     }
-    
+
     if (colony.target === "randomExit") {
       targetNode = getRandomNode("exit");
     } else {
@@ -359,19 +389,19 @@ export class ACOScene extends Phaser.Scene {
 
     const ant = new Ant(startNode, targetNode, this.nodes, this, colony.color);
     this.ants.push(ant);
-  
-  // Actualizar contadores
-  if (colony.type === "random" || colony.type === "mixed") {
-    // Para colonias aleatorias, agrupar por nombre base
-    const baseName = colony.name.replace(/\d+$/, '');
-    if (!this.colonyStats[baseName]) {
-      this.colonyStats[baseName] = { spawnCount: 0, arrivedCount: 0 };
+
+    // Actualizar contadores
+    if (colony.type === "random" || colony.type === "mixed") {
+      // Para colonias aleatorias, agrupar por nombre base
+      const baseName = colony.name.replace(/\d+$/, '');
+      if (!this.colonyStats[baseName]) {
+        this.colonyStats[baseName] = { spawnCount: 0, arrivedCount: 0 };
+      }
+      this.colonyStats[baseName].spawnCount++;
+    } else {
+      colony.spawnCount++;
+      colony.text.setText(`Colonia ${colony.name}: ${colony.arrivedCount}/${colony.spawnCount}`);
     }
-    this.colonyStats[baseName].spawnCount++;
-  } else {
-    colony.spawnCount++;
-    colony.text.setText(`Colonia ${colony.name}: ${colony.arrivedCount}/${colony.spawnCount}`);
-  }
   }
 
   runCycle() {
@@ -386,101 +416,101 @@ export class ACOScene extends Phaser.Scene {
 
   selectNextNode(ant, neighbors) {
     if (!neighbors || neighbors.length === 0) return null;
-  
+
     const previousNode = ant.path.length >= 2 ? ant.path[ant.path.length - 2] : null;
     const validNeighbors = neighbors.filter(n => {
       // Validar que el nodo existe
       if (n === undefined || n >= this.nodes.length) return false;
-  
+
       // Evitar retroceso
       if (n === previousNode) return false;
-  
+
       const edgeKey = `${ant.current}-${n}`;
       const reverseEdgeKey = `${n}-${ant.current}`;
-  
+
       // Verificar semáforo
       if (this.edgeStates[edgeKey] === false) {
         // Si el semáforo está rojo (false), no permitir el paso
         return false;
       }
-  
+
       // Verificar si es contravía (arista unidireccional)
       if (ONE_WAY_STREETS[reverseEdgeKey]) {
         return false;
       }
-  
+
       return true;
     });
-  
+
     if (validNeighbors.length === 0) {
-    ant.retryCount++;
-    if (ant.retryCount >= ant.maxRetries) {
-      console.log(`Hormiga ${ant.path[0]} reiniciando ruta`);
-      ant.path = [ant.path[0]]; // Reiniciar camino manteniendo origen
-      ant.current = ant.path[0];
-      ant.retryCount = 0;
-      ant.visitedEdges.clear();
+      ant.retryCount++;
+      if (ant.retryCount >= ant.maxRetries) {
+        console.log(`Hormiga ${ant.path[0]} reiniciando ruta`);
+        ant.path = [ant.path[0]]; // Reiniciar camino manteniendo origen
+        ant.current = ant.path[0];
+        ant.retryCount = 0;
+        ant.visitedEdges.clear();
+      }
+      return null;
     }
-    return null;
+
+    // Calcular puntuación para cada vecino considerando dirección
+    const scoredNeighbors = validNeighbors.map(n => {
+      const edgeKey = `${Math.min(ant.current, n)}-${Math.max(ant.current, n)}`;
+      const isVisited = ant.visitedEdges.has(edgeKey);
+
+      const toNode = this.nodes[n];
+      const fromNode = this.nodes[ant.current];
+
+      // Vector hacia el nodo vecino
+      const moveVector = {
+        x: toNode.x - fromNode.x,
+        y: toNode.y - fromNode.y
+      };
+      // Normalizar
+      const moveLength = Math.sqrt(moveVector.x ** 2 + moveVector.y ** 2);
+      if (moveLength > 0) {
+        moveVector.x /= moveLength;
+        moveVector.y /= moveLength;
+      }
+
+      // Producto punto con dirección deseada
+      const directionScore = Math.max(0,
+        moveVector.x * ant.directionVector.x +
+        moveVector.y * ant.directionVector.y
+      );
+
+      // Puntaje basado en: feromonas, distancia, dirección y visitas previas
+      const pher = this.pheromones[ant.current][n];
+      const heur = 1 / Phaser.Math.Distance.BetweenPoints(fromNode, toNode);
+      const visitedPenalty = isVisited ? 0.3 : 1; // Penalizar aristas visitadas
+
+      return {
+        node: n,
+        score: (pher ** this.alpha) *
+          (heur ** this.beta) *
+          (directionScore ** 1.5) * // Más peso a dirección correcta
+          visitedPenalty
+      };
+    });
+
+    // Seleccionar por ruleta
+    const totalScore = scoredNeighbors.reduce((sum, { score }) => sum + score, 0);
+    let random = Math.random() * totalScore;
+    let cumulative = 0;
+
+    for (const { node, score } of scoredNeighbors) {
+      cumulative += score;
+      if (random <= cumulative) {
+        ant.visitedEdges.add(`${Math.min(ant.current, node)}-${Math.max(ant.current, node)}`);
+        ant.updateDirectionVector();
+        return node;
+      }
+    }
+
+    return validNeighbors[0];
   }
 
-  // Calcular puntuación para cada vecino considerando dirección
-  const scoredNeighbors = validNeighbors.map(n => {
-    const edgeKey = `${Math.min(ant.current, n)}-${Math.max(ant.current, n)}`;
-    const isVisited = ant.visitedEdges.has(edgeKey);
-    
-    const toNode = this.nodes[n];
-    const fromNode = this.nodes[ant.current];
-    
-    // Vector hacia el nodo vecino
-    const moveVector = {
-      x: toNode.x - fromNode.x,
-      y: toNode.y - fromNode.y
-    };
-    // Normalizar
-    const moveLength = Math.sqrt(moveVector.x**2 + moveVector.y**2);
-    if (moveLength > 0) {
-      moveVector.x /= moveLength;
-      moveVector.y /= moveLength;
-    }
-    
-    // Producto punto con dirección deseada
-    const directionScore = Math.max(0, 
-      moveVector.x * ant.directionVector.x + 
-      moveVector.y * ant.directionVector.y
-    );
-    
-    // Puntaje basado en: feromonas, distancia, dirección y visitas previas
-    const pher = this.pheromones[ant.current][n];
-    const heur = 1 / Phaser.Math.Distance.BetweenPoints(fromNode, toNode);
-    const visitedPenalty = isVisited ? 0.3 : 1; // Penalizar aristas visitadas
-    
-    return {
-      node: n,
-      score: (pher**this.alpha) * 
-             (heur**this.beta) * 
-             (directionScore**1.5) * // Más peso a dirección correcta
-             visitedPenalty
-    };
-  });
-
-  // Seleccionar por ruleta
-  const totalScore = scoredNeighbors.reduce((sum, {score}) => sum + score, 0);
-  let random = Math.random() * totalScore;
-  let cumulative = 0;
-  
-  for (const {node, score} of scoredNeighbors) {
-    cumulative += score;
-    if (random <= cumulative) {
-      ant.visitedEdges.add(`${Math.min(ant.current, node)}-${Math.max(ant.current, node)}`);
-      ant.updateDirectionVector();
-      return node;
-    }
-  }
-  
-  return validNeighbors[0];
-  }
-  
 
   getEdgeTraffic(u, v) {
     const edgeKey = `${Math.min(u, v)}-${Math.max(u, v)}`;
@@ -685,13 +715,13 @@ export class ACOScene extends Phaser.Scene {
     });
   }
   spawnNextAnt() {
-  // Seleccionar colonia con menos hormigas activas
-  const colony = this.colonies.reduce((prev, curr) => {
-    const prevCount = this.ants.filter(a => a.path[0] === prev.start).length;
-    const currCount = this.ants.filter(a => a.path[0] === curr.start).length;
-    return currCount < prevCount ? curr : prev;
-  });
-  
-  this.spawnAnt(colony);
-}
+    // Seleccionar colonia con menos hormigas activas
+    const colony = this.colonies.reduce((prev, curr) => {
+      const prevCount = this.ants.filter(a => a.path[0] === prev.start).length;
+      const currCount = this.ants.filter(a => a.path[0] === curr.start).length;
+      return currCount < prevCount ? curr : prev;
+    });
+
+    this.spawnAnt(colony);
+  }
 }
