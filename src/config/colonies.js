@@ -58,7 +58,6 @@ export const COLONIES = [
   }
 ];
 
-// Función para obtener nodos aleatorios de entrada/salida
 export function getRandomNode(type) {
   const nodes = type === "entry" 
     ? ENTRANCES.map(e => e.node) 

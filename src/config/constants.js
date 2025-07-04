@@ -4,8 +4,8 @@ export const DURATION_FACTOR = 25;
 export const SPAWN_INTERVAL = 1500;
 export const CYCLE_INTERVAL = 150;
 export const TRAFFIC_INTERVAL = 10;
-export const MIN_ANTS_PER_MINUTE = 70;
-export const MAX_ANTS_PER_MINUTE = 100;
+export const MIN_ANTS_PER_MINUTE = 140;
+export const MAX_ANTS_PER_MINUTE = 200;
 export const SPAWN_RANDOMNESS = 0.2; // Variabilidad del 20%
 
 // ≈706ms por hormiga

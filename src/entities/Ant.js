@@ -27,13 +27,6 @@ export class Ant {
             5,
             color   
         );
-/*
-        this.collisionRadius = 8; // Radio para detección de colisiones
-        this.isAvoiding = false;
-        this.avoidanceTimer = 0;
-        this.avoidanceDirection = { x: 0, y: 0 };
-        this.maxAvoidanceTime = 1000; // 1 segundo de evitación
-*/
         this.maxRetries = 3; // Intentos máximos antes de reiniciar ruta
         this.retryCount = 0;
         this.visitedEdges = new Set(); // Registrar aristas visitadas
@@ -62,13 +55,7 @@ export class Ant {
             }
             return;
         }
-/*
-        // Verificar colisiones antes de moverse
-        if (this.checkCollisions(ctx)) {
-            return;
-        }
-        
-*/
+
         const previousNode = this.path.length > 1 ? this.path[this.path.length - 2] : null;
 
         // 1. Obtener vecinos directos
@@ -116,75 +103,6 @@ export class Ant {
         );
         this.moveTo(next, dist, ctx);
     }
-    /*
-    checkCollisions(ctx) {
-        const collidingAnts = ctx.ants.filter(ant => {
-            if (ant === this || ant.arrived || !ant.isMoving) return false;
-            
-            const distance = Phaser.Math.Distance.Between(
-                this.sprite.x, this.sprite.y,
-                ant.sprite.x, ant.sprite.y
-            );
-            
-            return distance < this.collisionRadius + ant.collisionRadius;
-        });
-
-        if (collidingAnts.length > 0) {
-            // Calcular dirección de evitación
-            const avgX = collidingAnts.reduce((sum, ant) => sum + ant.sprite.x, 0) / collidingAnts.length;
-            const avgY = collidingAnts.reduce((sum, ant) => sum + ant.sprite.y, 0) / collidingAnts.length;
-            
-            this.avoidanceDirection = {
-                x: this.sprite.x - avgX,
-                y: this.sprite.y - avgY
-            };
-            
-            // Normalizar la dirección
-            const length = Math.sqrt(this.avoidanceDirection.x ** 2 + this.avoidanceDirection.y ** 2);
-            this.avoidanceDirection.x /= length;
-            this.avoidanceDirection.y /= length;
-            
-            this.isAvoiding = true;
-            this.avoidanceTimer = this.maxAvoidanceTime;
-            
-            return true;
-        }
-        
-        return false;
-    }
-*/
-/*
-    performAvoidance(ctx) {
-        // Mover en la dirección de evitación
-        const avoidanceSpeed = this.speed * 0.5; // Moverse más lento al evitar
-        
-        this.sprite.x += this.avoidanceDirection.x * avoidanceSpeed * (ctx.time.delta / 1000);
-        this.sprite.y += this.avoidanceDirection.y * avoidanceSpeed * (ctx.time.delta / 1000);
-        
-        // Verificar si podemos volver al camino
-        if (this.avoidanceTimer < this.maxAvoidanceTime * 0.5) {
-            const distanceToPath = Phaser.Math.Distance.BetweenPoints(
-                { x: this.sprite.x, y: this.sprite.y },
-                this.nodes[this.current]
-            );
-            
-            if (distanceToPath > 20) {
-                // Volver hacia el nodo actual
-                const direction = {
-                    x: this.nodes[this.current].x - this.sprite.x,
-                    y: this.nodes[this.current].y - this.sprite.y
-                };
-                
-                const length = Math.sqrt(direction.x ** 2 + direction.y ** 2);
-                direction.x /= length;
-                direction.y /= length;
-                
-                this.sprite.x += direction.x * avoidanceSpeed * (ctx.time.delta / 1000);
-                this.sprite.y += direction.y * avoidanceSpeed * (ctx.time.delta / 1000);
-            }
-        }
-    }
-*/
     moveTo(nextNodeIndex, distance, ctx) {
         this.isMoving = true;
         this.current = nextNodeIndex;

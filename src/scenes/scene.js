@@ -15,19 +15,18 @@ import { ONE_WAY_STREETS } from '../config/traffic';
 export class ACOScene extends Phaser.Scene {
   constructor() {
     super('ACOScene');
-    this.totalArrivedGlobal = 0;
-    this.numCarsText = null;
-    this.mostUsedRoutesText = null;
-    this.avgTimeText = null;
+    this.numCarsText = null; 
+    this.mostUsedRoutesText = null;  
+    this.avgTimeText = null;  
     this.numCars = 0;
-    this.mostUsedRoutes = {};
+    this.mostUsedRoutes = {}; 
     this.totalTravelTime = 0;
     this.totalArrived = 0;
     this.edgeUsage = {}
-    this.alpha = ACO_PARAMS.alpha;
-    this.beta = ACO_PARAMS.beta;
-    this.evaporationRate = ACO_PARAMS.evaporationRate;
-    this.numAntsPerColony = ACO_PARAMS.numAntsPerColony;
+    this.alpha = 0;
+    this.beta = 0;
+    this.evaporationRate = 0;
+    this.numAntsPerColony = 0;
     this.nodes = NODES;
     this.edges = [];
     this.pheromones = [];
@@ -39,11 +38,11 @@ export class ACOScene extends Phaser.Scene {
     this.specialEdgeTimers = {};
     this.colonyStats = {};
     this.antsPerSecondRange = [
-      MIN_ANTS_PER_MINUTE / 60,  // ~1.16 hormigas/seg
+      MIN_ANTS_PER_MINUTE / 50,  // ~1.16 hormigas/seg
       MAX_ANTS_PER_MINUTE / 60   // ~1.66 hormigas/seg
     ];
     this.nextSpawnInterval = this.calculateNextSpawnInterval();
-    this.HORMIGAS_POR_MINUTO = 250;
+    this.HORMIGAS_POR_MINUTO = 150;
     this.hormigasGeneradasEsteMinuto = 0;
     this.ultimoMinuto = 0;
 
@@ -60,21 +59,15 @@ export class ACOScene extends Phaser.Scene {
   preload() { }
 
   create() {
-    this.totalArrivedText = this.add.text(
-    100, 
-    110,  // Ajusta la posición según lo necesites
-    'Total de autos que llegaron: 0',
-    { font: '14px Arial', fill: '#ffffff' }
-  );
     this.numCarsText = this.add.text(
-      600,
-      50,
+      600, 
+      50,  
       'Número de autos: 0',
       { font: '14px Arial', fill: '#ffffff' }
     );
     this.mostUsedRoutesText = this.add.text(
-      600,
-      70,
+      600, 
+      70,  
       'Rutas más usadas: ',
       { font: '14px Arial', fill: '#ffffff' }
     );
@@ -145,7 +138,7 @@ export class ACOScene extends Phaser.Scene {
     this.trafficLights['28-10'] = this.add.circle(
       this.nodes[28].x, this.nodes[10].y, 10, 0x00ff00 // Color verde inicialmente
     ).setOrigin(0.5);
-
+    
     this.trafficLights['54-53'] = this.add.circle(
       this.nodes[54].x, this.nodes[53].y, 10, 0x00ff00 // Color verde inicialmente
     ).setOrigin(0.5);
@@ -165,7 +158,7 @@ export class ACOScene extends Phaser.Scene {
     this.trafficLights['23-36'] = this.add.circle(
       this.nodes[23].x, this.nodes[36].y, 10, 0x00ff00 // Color verde inicialmente
     ).setOrigin(0.5);
-
+    
     this.trafficLights['36-39'] = this.add.circle(
       this.nodes[36].x, this.nodes[39].y, 10, 0x00ff00 // Color verde inicialmente
     ).setOrigin(0.5);
@@ -226,7 +219,6 @@ export class ACOScene extends Phaser.Scene {
 
     this.updateElapsedTime();
 
-    this.totalArrivedText.setText(`Total de autos que llegaron: ${this.totalArrivedGlobal}`);
   }
   updateMostUsedRoutes() {
     // Contar las rutas recorridas
@@ -261,20 +253,19 @@ export class ACOScene extends Phaser.Scene {
   handleAntArrival(ant) {
     if (!ant.counted) {
       ant.counted = true;
-      this.totalArrived++;  // Incrementa el contador específico de la colonia
-      this.totalArrivedGlobal++;  // Incrementa el contador global
+      this.totalArrived++;  // Incrementar el número de autos que llegaron
     }
   }
   spawnAnt(colony) {
     let startNode, targetNode;
-
+  
     // Manejar entradas/salidas aleatorias
     if (colony.start === "randomEntry") {
       startNode = getRandomNode("entry");
     } else {
       startNode = colony.start;
     }
-
+    
     if (colony.target === "randomExit") {
       targetNode = getRandomNode("exit");
     } else {
@@ -382,7 +373,7 @@ export class ACOScene extends Phaser.Scene {
   }
 
   createUI() {
-    this.add.text(20, 20, 'Rutas con Algoritmo', { font: '16px Arial', fill: '#fff' });
+    
     this.add.rectangle(700, 30, 150, 30, 0x333333)
       .setInteractive()
       .on('pointerdown', () => this.resetSimulation());
@@ -390,7 +381,7 @@ export class ACOScene extends Phaser.Scene {
   }
 
   startTimers() {
-    // Generador continuo de hormigas
+     this.add.text(20, 20, 'Rutas sin Algoritmo', { font: '16px Arial', fill: '#fff' });   // Generador continuo de hormigas
     this.time.addEvent({
       delay: 1000 / (this.HORMIGAS_POR_MINUTO / 60), // ≈862ms entre hormigas
       callback: () => {
