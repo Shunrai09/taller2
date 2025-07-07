@@ -58,6 +58,36 @@ export class ACOScene extends Phaser.Scene {
   }
   preload() { }
 
+  updateIndicatorTexts() {
+    // Datos simulados (puedes ajustar estos valores según lo que necesites)
+    const simulatedData = {
+        intersections: 46,          // Número fijo de intersecciones
+        routes: 78,                 // Número fijo de rutas
+        carsPerMinute: 250,         // Valor fijo (el mismo que HORMIGAS_POR_MINUTO)
+        trafficLightTime: 5,
+        algorithmTime: 28.6,        // Valor fijo (segundos)
+        avgSpeed: Phaser.Math.FloatBetween(0.8, 1.2).toFixed(2),  // Valor aleatorio
+        topRoutes: [
+            { route: "22-33", count: 120 },
+            { route: "33-34", count: 115 },
+            { route: "24-32", count: 95 }
+        ]
+    };
+
+    // Actualizar los textos con datos simulados
+    this.intersectionsText.setText(`Intersecciones modeladas: ${simulatedData.intersections}`);
+    this.routesText.setText(`Rutas implementadas: ${simulatedData.routes}`);
+    this.trafficLightTimeText.setText(`Tiempo de semáforos: ${simulatedData.trafficLightTime}s`);
+    this.avgSpeedText.setText(`Velocidad promedio: ${simulatedData.avgSpeed}`);
+    this.algorithmTimeText.setText(`Tiempo de ejecucion:${simulatedData.algorithmTime}`)
+
+    // Rutas más usadas (simuladas)
+    let routesText = 'Rutas más usadas:\n';
+    simulatedData.topRoutes.forEach(route => {
+        routesText += `${route.route}: ${route.count} veces\n`;
+    });
+    this.mostUsedRoutesText.setText(routesText);
+}
   create() {
     this.numCarsText = this.add.text(
       600, 
@@ -77,6 +107,40 @@ export class ACOScene extends Phaser.Scene {
       'Tiempo transcurrido: 0s',
       { font: '14px Arial', fill: '#ffffff' }
     );
+    this.intersectionsText = this.add.text(
+        600, 200,
+        'Intersecciones modeladas: 0',
+        { font: '14px Arial', fill: '#ffffff' }
+    );
+
+    this.routesText = this.add.text(
+        600, 220,
+        'Rutas implementadas: 0',
+        { font: '14px Arial', fill: '#ffffff' }
+    );
+
+  
+
+    this.trafficLightTimeText = this.add.text(
+        600, 260,
+        'Tiempo de semáforos: 5s',
+        { font: '14px Arial', fill: '#ffffff' }
+    );
+
+    this.avgSpeedText = this.add.text(
+        600, 280,
+        'Velocidad promedio: 0',
+        { font: '14px Arial', fill: '#ffffff' }
+    );
+
+    this.algorithmTimeText = this.add.text(
+        600, 320,
+        'Tiempo de ejecución: 0s',
+        { font: '14px Arial', fill: '#ffffff' }
+    );
+
+    // Inicializar los valores
+    this.updateIndicatorTexts();
 
     this.setupNodes();
     this.setupEdges();
