@@ -12,7 +12,7 @@ export const SPAWN_RANDOMNESS = 0.2; // Variabilidad del 20%
 export const ACO_PARAMS = {
   alpha: 1.0,
   beta: 2,
-  gamma: 1.2,  // Nuevo parámetro para peso del factor de congestión
+    gamma: 1.2,  // Nuevo parámetro para peso del factor de congestión
   evaporationRate: 0.97,
   numAntsPerColony: 20, // Menos vehículos para mejor flujo
   maxDetourRatio: 1.5   // Máximo desvío permitido (150% del camino directo)
