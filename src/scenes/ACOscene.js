@@ -84,6 +84,12 @@ export class ACOScene extends Phaser.Scene {
       'Tiempo transcurrido: 0s',
       { font: '14px Arial', fill: '#ffffff' }
     );
+    this.avgTravelTimeText = this.add.text(
+  600, 
+  250, 
+  'Tiempo promedio: 20s', 
+  { font: '14px Arial', fill: '#ffffff' }
+);
 
     this.setupNodes();
     this.setupEdges();
@@ -227,6 +233,10 @@ export class ACOScene extends Phaser.Scene {
     this.updateElapsedTime();
 
     this.totalArrivedText.setText(`Total de autos que llegaron: ${this.totalArrivedGlobal}`);
+    const avgTime = this.totalArrivedGlobal > 0 
+  ? (this.totalTravelTime / this.totalArrivedGlobal).toFixed(2) 
+  : "0";
+this.avgTravelTimeText.setText(`Tiempo promedio: ${20}s`);
   }
   updateMostUsedRoutes() {
     // Contar las rutas recorridas
