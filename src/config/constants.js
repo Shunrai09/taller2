@@ -31,4 +31,3 @@ export const FLOW_MODES = {
 };
 
 export const SIMULATION_MODE = FLOW_MODES.MIXED;
-

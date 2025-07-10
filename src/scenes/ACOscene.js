@@ -61,39 +61,69 @@ export class ACOScene extends Phaser.Scene {
   updateIndicatorTexts() {
     // Datos simulados (puedes ajustar estos valores según lo que necesites)
     const simulatedData = {
-        intersections: 56,          // Número fijo de intersecciones
-        routes: 78,                 // Número fijo de rutas
-        carsPerMinute: 250,         // Valor fijo (el mismo que HORMIGAS_POR_MINUTO)
-        trafficLightTime: 5,        // Valor fijo (segundos)
-        avgSpeed: 12,  // Valor aleatorio
-        topRoutes: [
-            { route: "22-33", count: 120 },
-            { route: "33-34", count: 115 },
-            { route: "24-32", count: 95 }
-        ]
+      intersections: 67,          
+      routes: 120,                
+      trafficLightTime: 10,       
+      avgSpeed: 12,               
+      topRoutes: [
+        { route: "22-33", count: 120 },
+        { route: "33-34", count: 107 },
+        { route: "24-32", count: 97 }
+      ]
     };
+
+    // Variables para el patrón de incremento
+    const randomAdditions = [
+      [1, 2, 3], 
+      [2, 2, 1], 
+      [3, 1, 2]  
+    ];
+
+    // Estado para controlar el patrón
+    let currentPatternIndex = 0;
 
     // Actualizar los textos con datos simulados
     this.intersectionsText.setText(`Intersecciones modeladas: ${simulatedData.intersections}`);
     this.routesText.setText(`Rutas implementadas: ${simulatedData.routes}`);
-    this.trafficLightTimeText.setText(`Tiempo de semáforos: ${simulatedData.trafficLightTime}s`);
-    this.avgSpeedText.setText(`Velocidad promedio: ${simulatedData.avgSpeed}`);
+    this.trafficLightTimeText.setText(`Tiempo de semáforos: ${simulatedData.trafficLightTime}`);
 
     // Rutas más usadas (simuladas)
     let routesText = 'Rutas más usadas:\n';
     simulatedData.topRoutes.forEach(route => {
-        routesText += `${route.route}: ${route.count} veces\n`;
+      routesText += `${route.route}: ${route.count} veces\n`;
     });
     this.mostUsedRoutesText.setText(routesText);
-}
+
+    setInterval(() => {
+      simulatedData.avgSpeed = Math.floor(Math.random() * 3) + 11;
+
+      this.avgSpeedText.setText(`Velocidad promedio: ${simulatedData.avgSpeed}px/s`);
+
+      const pattern = randomAdditions[currentPatternIndex];
+
+      simulatedData.topRoutes[0].count += pattern[0];
+      simulatedData.topRoutes[1].count += pattern[1];
+      simulatedData.topRoutes[2].count += pattern[2];
+
+      currentPatternIndex = (currentPatternIndex + 1) % randomAdditions.length;
+
+      let routesText = 'Rutas más usadas:\n';
+      simulatedData.topRoutes.forEach(route => {
+        routesText += `${route.route}: ${route.count} veces\n`;
+      });
+      this.mostUsedRoutesText.setText(routesText);
+
+    }, 1000);  // Ejecutar cada 1000 ms (1 segundo)
+  }
+
 
   create() {
     this.totalArrivedText = this.add.text(
-    100, 
-    110,  // Ajusta la posición según lo necesites
-    'Total de autos que llegaron: 0',
-    { font: '14px Arial', fill: '#ffffff' }
-  );
+      100,
+      110,  // Ajusta la posición según lo necesites
+      'Total de autos que llegaron: 0',
+      { font: '14px Arial', fill: '#ffffff' }
+    );
     this.numCarsText = this.add.text(
       600,
       50,
@@ -113,41 +143,41 @@ export class ACOScene extends Phaser.Scene {
       { font: '14px Arial', fill: '#ffffff' }
     );
     this.avgTravelTimeText = this.add.text(
-  600, 
-  220, 
-  'Tiempo promedio: 0s', 
-  { font: '14px Arial', fill: '#ffffff' }
-);
-this.intersectionsText = this.add.text(
-        600, 200,
-        'Intersecciones modeladas: 0',
-        { font: '14px Arial', fill: '#ffffff' }
+      600,
+      220,
+      'Tiempo promedio: 0s',
+      { font: '14px Arial', fill: '#ffffff' }
+    );
+    this.intersectionsText = this.add.text(
+      600, 200,
+      'Intersecciones modeladas: 0',
+      { font: '14px Arial', fill: '#ffffff' }
     );
 
     this.routesText = this.add.text(
-        600, 240,
-        'Rutas implementadas: 0',
-        { font: '14px Arial', fill: '#ffffff' }
+      600, 240,
+      'Rutas implementadas: 0',
+      { font: '14px Arial', fill: '#ffffff' }
     );
 
-    
+
 
     this.trafficLightTimeText = this.add.text(
-        600, 280,
-        'Tiempo de semáforos: 5s',
-        { font: '14px Arial', fill: '#ffffff' }
+      600, 280,
+      'Tiempo de semáforos: 5s',
+      { font: '14px Arial', fill: '#ffffff' }
     );
 
     this.avgSpeedText = this.add.text(
-        600, 300,
-        'Velocidad promedio: 0',
-        { font: '14px Arial', fill: '#ffffff' }
+      600, 300,
+      'Velocidad promedio: 0',
+      { font: '14px Arial', fill: '#ffffff' }
     );
 
     this.algorithmTimeText = this.add.text(
-        600, 320,
-        'Tiempo de ejecución: 0s',
-        { font: '14px Arial', fill: '#ffffff' }
+      600, 320,
+      'Tiempo de ejecución: 0s',
+      { font: '14px Arial', fill: '#ffffff' }
     );
 
     // Inicializar los valores
@@ -291,18 +321,23 @@ this.intersectionsText = this.add.text(
     this.numCarsText.setText(`Número de autos: ${this.numCars}`);
     this.totalArrivedText.setText(`Total de autos que llegaron: ${this.totalArrivedGlobal}`);
 
-    // Simular tiempo promedio de viaje (valor aleatorio entre 30 y 60 segundos)
-    const simulatedAvgTime = (20);
-    this.avgTravelTimeText.setText(`Tiempo promedio: ${simulatedAvgTime}s`);
+    // Simular tiempo promedio de viaje (inicialmente 30, luego 35, y después fluctuante entre 19-22)
+    let simulatedAvgTime = 30;  // Inicialmente 30
+    setTimeout(() => {
+      simulatedAvgTime = 35;  // Cambiar a 35 después de un tiempo
+      this.avgTravelTimeText.setText(`Tiempo promedio: ${simulatedAvgTime}s`);
 
-    // Tiempo de ejecución real (opcional: puedes simularlo también si prefieres)
+      setInterval(() => {
+        // Cambiar entre 19, 20, 21 y 22 cada segundo
+        simulatedAvgTime = Math.floor(Math.random() * 4) + 19;
+        this.avgTravelTimeText.setText(`Tiempo promedio: ${simulatedAvgTime}s`);
+      }, 4000); // Cambiar cada 1 segundo
+    }, 30000); // Cambiar a 35 después de 2 segundos (por ejemplo)
+
     const elapsedTime = Math.floor(this.time.now / 1000);
     this.timeElapsedText.setText(`Tiempo de ejecución: ${elapsedTime}s`);
 
-    // Actualizar los demás indicadores simulados
     this.updateIndicatorTexts();
-    
-
   }
   updateMostUsedRoutes() {
     // Contar las rutas recorridas

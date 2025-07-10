@@ -61,12 +61,10 @@ export class ACOScene extends Phaser.Scene {
   updateIndicatorTexts() {
     // Datos simulados (puedes ajustar estos valores según lo que necesites)
     const simulatedData = {
-        intersections: 46,          // Número fijo de intersecciones
-        routes: 78,                 // Número fijo de rutas
-        carsPerMinute: 250,         // Valor fijo (el mismo que HORMIGAS_POR_MINUTO)
-        trafficLightTime: 5,
-        algorithmTime: 28.6,        // Valor fijo (segundos)
-        avgSpeed: Phaser.Math.FloatBetween(0.8, 1.2).toFixed(2),  // Valor aleatorio
+        intersections: 67,          // Número fijo de intersecciones
+        routes: 120,                 // Número fijo de rutas
+        trafficLightTime: 10,
+        avgSpeed: Phaser.Math.FloatBetween(10, 15).toFixed(2),  // Valor aleatorio
         topRoutes: [
             { route: "22-33", count: 120 },
             { route: "33-34", count: 115 },
@@ -78,7 +76,7 @@ export class ACOScene extends Phaser.Scene {
     this.intersectionsText.setText(`Intersecciones modeladas: ${simulatedData.intersections}`);
     this.routesText.setText(`Rutas implementadas: ${simulatedData.routes}`);
     this.trafficLightTimeText.setText(`Tiempo de semáforos: ${simulatedData.trafficLightTime}s`);
-    this.avgSpeedText.setText(`Velocidad promedio: ${simulatedData.avgSpeed}`);
+    this.avgSpeedText.setText(`Velocidad promedio: ${simulatedData.avgSpeed}px/s`);
     this.algorithmTimeText.setText(`Tiempo de ejecucion:${simulatedData.algorithmTime}`)
 
     // Rutas más usadas (simuladas)

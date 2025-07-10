@@ -105,4 +105,3 @@ export const ONE_WAY_STREETS = {
   '42-19': true,
 };
 
-
